@@ -60,3 +60,38 @@ mae_test 3369.795934797164
 wmae_train 2350.272432798231
 wmae_test 3505.5818113659448
 ```
+
+### XGBoost_Obj_AbsoluteError_Estimator_1 - 200_HigherLR
+
+https://dagshub.com/Cimbir/Store-Sales-Forecasting.mlflow/#/experiments/4/runs/c7f9a37a6b5c49b291cf8453f15cf288
+
+`AbsoluteError` თავდაპირველად `Estimator=1`-ზე უკეთესი შედეგი დადო:
+
+```
+mae_train 11075.31378309588
+mae_test 11305.03717124261
+wmae_train 11248.186628292535
+wmae_test 11582.631160385079
+```
+
+თუმცა რაც უფრო ვამატებდი `Estimator`-ებს, აშკარა ხდებოდა, რომ უფრო უჭირდა მონაცემებზე მორგება და overfit-იც კი ვიდრე `SquaredError` loss ფუნქციას.
+
+`Estimator=100`-ზე მივიღე შემდეგი შედეგი:
+
+```
+wmae_train 3393.5045087223466
+wmae_test 4106.367590955688
+```
+
+![Plot](plots/xgboost/SquaredError_Estimator_100.png)
+
+ეს შევადაროთ `SquaredError`-ს `Estimator=100`-ზე:
+
+```
+wmae_train 2887.015479419683
+wmae_test 3707.861059151612
+```
+
+![Plot](plots/xgboost/AbsoluteError_Estimator_100.png)
+
+გრაფიკებიდანაც ჩანს, რომ `SquaredError` გაცილებით უკეთ აკეთებს prediction-ებს validation set-ზე, მიუხედავად იმისა, რომ ტოლი რაოდენობის XGBoost ხეები გვაქვს ორივე მოდელში.
