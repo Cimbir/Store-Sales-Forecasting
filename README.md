@@ -129,6 +129,9 @@ wmae_test 5623.664094910361
 
 ამ ექსპერიმენტებიდან საბოლოო ჯამში მივედი იმ დასკვნამდე, რომ XGBoost ყველაზე კარგად მუშაობს `SquaredError`-ის მინიმიზაციისას, თუნდაც WMAE მეტრიკა მაინტერესებდეს ყველაზე მეტად, ამიტომაც ამიერიდან ამ loss ფუნქციას გამოვიყენებ. თუ პრობლემა შეიქმნება WMAE-ს მინიმიზაციისას შემიძლია early stopping მექანიზმი ჩავურთო ყოველთვის.
 
+### XGBoost_Estimator_200_L1_100_L2_100_Depth_3
+
+https://dagshub.com/Cimbir/Store-Sales-Forecasting.mlflow/#/experiments/4/runs/33586c9faf314360b3189cae1fbdeab6
 
 შემდეგი ნაბიჯია, რომ ავიღო overfitted მოდელები, რაც მივიღე და შევეცადო გავასწორო მათი მაღალი ვარიაცია regularization მეთოდების დამატებით. სასურველია, რომ train და validation score-ები დაახლოებით თანაბარი იყოს.
 
@@ -156,8 +159,6 @@ lambda in [1, 10, 20, 40, 100, 200]
 
 საუკეთესო მოდელი ამოვარჩიე მინიმალური სხვაობით WMAE_TRAIN-სა და WMAE_TEST-ს შორის შემდეგი პარამეტრებით:
 
-https://dagshub.com/Cimbir/Store-Sales-Forecasting.mlflow/#/experiments/4/runs/33586c9faf314360b3189cae1fbdeab6
-
 ```
 {
     'objective': 'reg:squarederror', 
@@ -171,7 +172,7 @@ https://dagshub.com/Cimbir/Store-Sales-Forecasting.mlflow/#/experiments/4/runs/3
 
 ![Plot](plots/xgboost/Estimator_200_Regularization.png)
 
-თუმცა ასევე გასათვალისწინებელია, რომ train და validation შედეგები ორივე გაუარესდა:
+თუმცა ასევე გასათვალისწინებელია, რომ train და validation შედეგები ორივე გაუარესდა, მიუხედავად იმისა, რომ Estimator-ების რაოდენობა 100-დან 200-მდე გავზარდე.
 
 ```
 mae_train 4842.940823694781
