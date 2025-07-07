@@ -180,3 +180,21 @@ mae_test 5193.878655162364
 wmae_train 5017.586377879966
 wmae_test 5479.755364557295
 ```
+
+### XGBoost_Estimator_500_L1_100_L2_100_Depth_3
+
+https://dagshub.com/Cimbir/Store-Sales-Forecasting.mlflow/#/experiments/4/runs/80cfc38226a843f397b4f02eab48d648
+
+ამ ექსპერიმენტში იმავე მოდელს ვიყენებ, რაც წინა ექსპერიმენტში თუმცა Estimator-ების რაოდენობას 500-მდე ვზრდი.
+
+log-ებიდანაც ჩანს, რომ training-ის დროს test score ბოლოსკენ თითქმის აღარ იცვლება, თუმცა train score მაინც მცირდება
+
+```
+[495]	train-mae:4467.05844	train-wmae:4467.05811	test-mae:5067.59927	test-wmae:5067.59912
+[496]	train-mae:4466.43190	train-wmae:4466.43164	test-mae:5066.75204	test-wmae:5066.75098
+[497]	train-mae:4465.79447	train-wmae:4465.79443	test-mae:5066.39085	test-wmae:5066.39062
+[498]	train-mae:4465.74906	train-wmae:4465.74951	test-mae:5068.73426	test-wmae:5068.73438
+[499]	train-mae:4464.18536	train-wmae:4464.18555	test-mae:5068.05948	test-wmae:5068.05957
+```
+
+აქედან მივდივარ დასკვნამდე, რომ ჩემ მიერ შერჩეული feature-ების ლიმიტამდე მივედი ფაქტობრივად და გაუმჯობესება რთული იქნება overfit-ის გარეშე.
