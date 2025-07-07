@@ -9,8 +9,8 @@ https://www.kaggle.com/competitions/walmart-recruiting-store-sales-forecasting
 
 # Repository-ის სტრუქტურა
 
-* /plots - დირექტორია, სადაც თითოეული მოდელისათვის საინტერესო plot-ებია მოთავსებული, რომლებსაც ამ README.md-ში ვიყენებთ
-* model_experiment_XGBoost.ipynb - XGBoost მოდელის გაწვრთნის პროცესის კოდი თითოეული ნაბიჯით.
+* **/plots** - დირექტორია, სადაც თითოეული მოდელისათვის საინტერესო plot-ებია მოთავსებული, რომლებსაც ამ README.md-ში ვიყენებთ
+* **model_experiment_XGBoost.ipynb** - XGBoost მოდელის გაწვრთნის პროცესის კოდი თითოეული ნაბიჯით.
 
 
 # Training
