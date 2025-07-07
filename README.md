@@ -7,6 +7,12 @@ https://www.kaggle.com/competitions/walmart-recruiting-store-sales-forecasting
 
 კონკურსი ფასდება WMAE მეტრიკით, რაც მსგავსია MAE მეტრიკის, ოღონდ ზოგიერთ მონაცემს, ამ შემთხვევაში `IsHoliday==true` ტიპის მონაცემებს მინიჭებული აქვს წონა 5, დანარჩენებს კი წონა 1.
 
+# Repository-ის სტრუქტურა
+
+* /plots - დირექტორია, სადაც თითოეული მოდელისათვის საინტერესო plot-ებია მოთავსებული, რომლებსაც ამ README.md-ში ვიყენებთ
+* model_experiment_XGBoost.ipynb - XGBoost მოდელის გაწვრთნის პროცესის კოდი თითოეული ნაბიჯით.
+
+
 # Training
 
 ამოცანის ამოსახსნელად გამოვცადეთ რამდენიმე სხვადასხვა მოდელი. თითოეულს გასაწვრთნელად სჭირდება განსხვავებული ტიპის მიდგომა როგორც Feature Selection, Feature Engineering დროს, ასევე თვითონ training პროცესში. შესაბამისად თითოეულ მოდელს განვიხილავთ ცალკე.
@@ -25,7 +31,7 @@ https://dagshub.com/Cimbir/Store-Sales-Forecasting.mlflow/#/experiments/4
 
 Train/Validation მონაცემების გამოსაყოფად გამოვიყენე `SPLIT_DATE=2011-09-01` თარიღი და გაჭრილი მონაცემებით ავაგე გრაფიკი, რომელიც ნოუთბუქშია ნაჩვენები.
 
-### Feature Engineering 1
+### XGBoost Feature Engineering 1
 
 ექსპერიმენტები დავიწყე ძალიან მარტივი feature-ების შექმნით: `Year`, `Month`, `Day`. ფაქტობრივად 1 სტრინგად ჩაწერილი `Date` feature დავშალე 3 რიცხვით feature-ად. იმედი მქონდა, რომ ეს feature-ები დაეხმარებოდა მოდელს პერიოდულობის აღმოჩენაში. ასევე იმედს ვიქონიებდი, რომ (Store, Dept) წყვილით შეძლებდა განესხვავებინა სხვადასხვა Time Series და თითოეულისათვის გაეკეთებინა სწორი prediction.
 
