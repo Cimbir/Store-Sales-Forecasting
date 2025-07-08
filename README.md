@@ -11,6 +11,7 @@ https://www.kaggle.com/competitions/walmart-recruiting-store-sales-forecasting
 
 * **/plots** - დირექტორია, სადაც თითოეული მოდელისათვის საინტერესო plot-ებია მოთავსებული, რომლებსაც ამ README.md-ში ვიყენებთ
 * **model_experiment_XGBoost.ipynb** - XGBoost მოდელის გაწვრთნის პროცესის კოდი თითოეული ნაბიჯით.
+* **model_experiment_LightGBM.ipynb** - LightGBM მოდელის training.
 
 
 # Training
@@ -253,3 +254,38 @@ wmae_test 2985.1010091897083
 Feature Importance-ის მხრივ, ჩემი დამატებული feature-ები ერთ-ერთი ყველაზე მნიშვნელოვანი გახდა წინა მოდელებთან შედარებით, რაც მოსალოდნელი იყო.
 
 ![Plot](plots/xgboost/LagFeats_FeatureImportance.png)
+
+
+## LightGBM
+
+https://dagshub.com/Cimbir/Store-Sales-Forecasting.mlflow/#/experiments/10
+
+გადავწყვიტე იმავე მიდგომები გამომეცადა ასევე LightGBM-ზე და შემედარებინა XGBoost-თან performance-სა და სიჩქარეში.
+
+### LightGBM Feature Engineering 1
+
+თავდაპირველი ექსპერიმენტებისათვის XGBoost-ის მსგავსად აქაც მხოლოდ დავამატე `Year`, `Month`, `Day` და Train/Validation Split გავაკეთე ისევ `2011-09-01`-ში. იმისათვის, რომ მოდელმა დაითვალოს WMAE loss ფუნქცია, LightGBM-ის საკუთარ lgb.Dataset ობიექტში უნდა დამესეტა weight პარამეტრები თითოეული row-სთვის და შემდეგ ამერჩია MAE loss function. ასევე დავწერე custom WMAE მეტრიკა, რომელიც მოდელის training-ის შემდეგ გაეშევება და predict()-ს გამოიყენებს. ეს მარტივი Preprocessor MLflow-ზე დავლოგე, როგორც `LightGBM_Preprocessor_1`
+
+### LightGBM Training 1
+
+თავდაპირველად გადავწყვიტე ისევ SquaredError vs AbsoluteError გამომეცადა LightGBM-ისათვის და შემემოწმებინა ორივე Loss ფუნქციისათვის, როგორ გავლენას ახდენს Learning Rate-ის ცვლილება.
+
+
+### LightGBM_Objective_MAE_Booster_1 - 500
+
+https://dagshub.com/Cimbir/Store-Sales-Forecasting.mlflow/#/experiments/10/runs/f155f126733e4bc487ee34565e16ec44
+
+ამ ექსპერიმენტების სერიაში default პარამეტრებზე და MAE loss ფუნქციაზე ვცადე, რომ შემეცვლა `num_booster_round` 1-დან 500-ის ჩათვლით და დავკვირვებოდი, როდის მიიღება overfit მოდელი.
+
+Booster-ების რაოდენობის 1-დან 50-მდე გაზრდით მკვეთრად უმჯობესდება wmae_test დაახლოებით 1200-დან 5000-ის ფარგლებში. ანუ შეგვიძლია დავასკვნათ, რომ `num_booster_round<50` გვაძლევს underfitted მოდელს. 100-დან დაწყებული უკვე შესამჩნევი ხდება დიდი აცდენა train და test ქულებს შორის, თუმცა აღსანიშნავია, რომ LightGBM-ის overfit უფრო რთულია ვიდრე XGBoost-ის.
+
+მაგალითად, რომ ავიღოთ უკიდურესი შემთხვევა `num_booster_round=500`, სადაც უკვე დაახლოებით 800 არის აცდენა train და test loss-ებს შორის:
+
+```
+wmae_train 3028.7613881699067
+wmae_test 3842.1951623332334
+```
+
+ისევ მაღაზია (1, 1)-ის prediction vs observation plot-ს რომ დავაკვირდეთ, დავინახავთ, რომ როდესაც XGBoost გაცილებით უფრო flexibility-ის იჩენდა და პირდაპირ ერგებოდა training-ს, მაგალითად peak მნიშვნელობებს ყოველთვის აღწევდა, LightGBM გაცილებით უფრო თავშეკავებულია.
+
+![Plot](plots/lightgbm/MAE_Booster_500_11.png)
