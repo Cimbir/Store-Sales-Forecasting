@@ -1,5 +1,6 @@
 # ML Final Project: Store Sales Forecasting
 
+ჯგუფის წევრები: გიორგი ებანოიძე, ვასიკო ვაზაგაევი, დაჩი სურამელაშვილი
 
 https://www.kaggle.com/competitions/walmart-recruiting-store-sales-forecasting
 
@@ -12,7 +13,14 @@ https://www.kaggle.com/competitions/walmart-recruiting-store-sales-forecasting
 * **/plots** - დირექტორია, სადაც თითოეული მოდელისათვის საინტერესო plot-ებია მოთავსებული, რომლებსაც ამ README.md-ში ვიყენებთ
 * **model_experiment_XGBoost.ipynb** - XGBoost მოდელის გაწვრთნის პროცესის კოდი თითოეული ნაბიჯით.
 * **model_experiment_LightGBM.ipynb** - LightGBM მოდელის training.
-
+* **model_inference_LightGBM.ipynb** - მოდელი LightGBM-ის inference ფაილი.
+* **model_experiment_DLinear.ipynb** - DLinear training.
+* **model_experiment_prophet.ipynb** - Prophet training.
+* **model_inference_patchtst.ipynb** - PatchTST training.
+* **model_inference_patchtst.ipynb** - PatchTST inference.
+* **model_experiment_TemporalFusionTransformer.ipynb** - TFT training.
+* **model_n_beats.ipynb** - N-Beats Training.
+* **model_sarima.ipynb** - Sarima Training.
 
 # Training
 
@@ -883,3 +891,186 @@ best_wmae 3074.133282639351
 ![Plot](plots/patchtst/predictions.png)
 
 ![Plot](plots/patchtst/errors_freq.png)
+
+### LightGBM_GroupLagFeats_Objective_MAE_Booster_150
+
+https://dagshub.com/Cimbir/Store-Sales-Forecasting.mlflow/#/experiments/10/runs/c98228003bc14684a673e64cdebb18c9
+
+ამ მოდელის გაწვრთნა იგივე პარამეტრებით, თუმცა 150 Booster-ით ვცადე, რათა შემემოწმებინა underfitted ხომ არ იყო მოდელი, თუმცა WMAE ტესტზე მხოლოდ მცირედ გაუმჯობესდა. შესაბამისად გადავწყვიტე, რომ საბოლოოდ წინა მოდელი და overffited მოდელის მიღება არ გამერისკა.
+
+```
+mae_train 1923.451521550722
+mae_test 2139.670299112856
+wmae_train 2109.626178889381
+wmae_test 2404.084584008354
+```
+
+### LightGBM_GroupLagFeats_Objective_MAE_Booster_100_TotalFit
+
+https://dagshub.com/Cimbir/Store-Sales-Forecasting.mlflow/#/experiments/10/runs/56be70a46c5e4855a646b5759b07eb59
+
+საბოლოოდ ავიღე საუკეთესო მოდელად 100 Booster-იანი ვერსია და გავწვრთენი მთლიან ბაზაზე და მოვამზადე inference-ისათვის. Preprocessor-იც დავფიტე მთლიან ბაზაზე და ავტვირთე MLflow-ზე.
+
+## Temporal Fusion Transformer(TFT)
+
+https://wandb.ai/dachis-none/walmart-recruiting-sales-TFT
+
+ამ მოდელის გასაწვრთნელად გამოვიყენე ფრეიმვორკი Pytorch Forecasting. TFT არის საკმაოდ კომპლექსური მოდელი, რომელსაც ძალიან დიდი რაოდენობით მონაცემები სჭირდება, თუმცა მაინც მაინტერესებდა რამდენად კარგად იმუშავებდა ჩვენი ამოცანისათვის.
+
+### TFT Data Preprocessing
+
+თავდაპირველად მონაცემები ისევ გავჭერი `2011-09-01` თარიღზე train/test set-ებად.
+
+შევქმენი Preprocessing Pipeline, რომელიც მონაცემებს გაამზადებდა TimeSeriesDataset-ისათვის. PytorchForecasting-ის TimeSeriesDataset ითხოვს, რომ მიიღოს დროით ერთმანეთისაგან თანაბრად დაშორებული მონაცემები და თითოეულ მონაცემს უნდა ერთოს დროის ინდექსი, რომელიც 1-ით იზრდება ერთი მონაცემიდან მეორე მონაცემამდე. ჩვენს მონაცემებში ავიღე ყველაზე ადრინდელი თარიღი და ამ თარიღს შევუსაბამე 1 და ყოველი მომდევნო კვირა 1-ით მეტი ინდექსით აღვნიშნე. პრობლემა ისაა, რომ ჩვენს dataset-ში უწყვეტი მიმდევრობა არ გვაქვს ყველა (Store, Dept) წყვილისათვის და ზოგგან რამდენიმე კვირა შეიძლება გამოტოვებული იყოს, თუმცა TimeSeriesDataset-ს აქვს ოფცია `allow_missing_timesteps`, რომელსაც თუ ჩავურთავ აუტომატურად შეეცდება შეავსოს გამოტოვებული თარიღები.
+
+TimeSeriesDataset-ს გადაეცემოდა ასევე პარამეტრი `group_ids`, რომელშიც გადავეცი `[Store, Dept]` და იგი განსაზღვრავდა თუ რამდენი განსხვავებული Time Series არსებობს ჩვენს მონაცემებში.
+
+ასევე აქვე შემეძლო, მიმეთითებინა Weight-ები თითოეული მონაცემის, რომელიც აუცილებელია ხოლმე WMAE მეტრიკის გამოთვლისას.
+
+მოდელის მთავარი იდეა ის არის, რომ აიღებს `max_encoder_length` სიგრძის მონაცემს წარსულიდან და შეეცდება, რომ გამოიცნოს რა მოხდება `max_prediction_length` მომავალში.
+
+თავიდან ვიფიქრე, რომ ავაგებდი უმარტივეს მოდელს, რომელიც წარსულის რამდენიმე მონაცემით გამოიცნობს მომავლის 1 მონაცემს და შემდეგ ნელ-ნელა გავართულებდი ისე, რომ ჩვენს ამოცანას მორგებოდა.
+
+### TFT-SimpleFeats-Forecast-1-Hidden-1 - 16
+
+https://wandb.ai/dachis-none/walmart-recruiting-sales-TFT/runs/agteyn9a/overview
+
+თავდაპირველი მოდელებისათვის ვიღებდი უმარტივეს პარამეტრებს და პირველ ექსპერიმენტებში მხოლოდ ვამოძრავებდი hidden_size ჰიპერპარამეტრს.
+
+```
+learning_rate=0.01,
+lstm_layers=1,
+hidden_size=1,
+dropout=0,
+output_size=1,
+loss=MAE(),
+attention_head_size=1,
+```
+
+dataset-ში მივუთითე `max_encoder_length:10`, რაც იმას ნიშნავს, რომ წინა 10 მონაცემით შეეძლებოდა შემდეგი მონაცემის გამოცნობას.
+
+ამ ექსპერიმენტებით `hidden_size` ავიყვანე 16-მდე, თუმცა val_loss მაინც 12,000-ის ფარგლებში მერყეობდა.
+
+### TFT-SimpleFeats-Forecast-1-Hidden-16-AttentionHead-4 - MAE-Hidden-64-LSTM-2
+
+https://wandb.ai/dachis-none/walmart-recruiting-sales-TFT/runs/vwa7uerr?nw=nwuservvaza22
+
+შემდეგ ექსპერიმენტებში ვცადე უამრავი მიდგომა, მაგალითად Loss ფუნქციის შეცვლა QuantileLoss-ად, ოპტიმალური Learning Rate-ის პოვნა სპეციალური Tuner-ით, Attention Head-ის 4-მდე გაზრდა, რომელიც საშუალებას მისცემდა მოდელს უფრო მეტ feature-ზე გაემახვლიებინა ყურადღება, LSTM-ების ფენების გაზრდა, Hidden Size-ის 64-მდე გაზრდა, თუმცა უშედეგოდ, რადგან val_loss მაინც 12,000 ფარგლებში მერყეობდა.
+
+### TFT-SimpleFeats-Forecast-1-MAE-History-30
+
+https://wandb.ai/dachis-none/walmart-recruiting-sales-TFT/runs/ee4n6vo0/overview
+
+ერთადერთი მიდგომა რაც დარცენილი მქონდა იყო `max_encoder_length`-ის გაზრდა, რომელიც 30 გავხადე და ამან გაამართლა. 
+
+```
+"val_MAE": 2083.003662109375
+```
+
+ამ ექსპერიმენტებში უკვე შეინიშნება უცნაურობა, რომლის დროსაც `train_loss_epoch: 4,100.4287109375`, უფრო მაღალი იყო ვიდრე val ცდომილება. ეს მოვლენა შეიძლება გამოიწვიოს Dropout-მა, თუმცა ამ ექსპერიმენტებისთვის ხელით დავუსეტე Dropout: 0. ასევე ბევრჯერ გადავამოწმე, რომ train dataset-ში რაიმე არ იჟონებოდეს validation dataset-დან და leak არ არსებულიყო.
+
+ბოლოს მივედი დასკვნამდე, რომ ეს მოვლენა ან გამოწვეულია მოდელში ჩაშენებული რეგულარიზაციის მექანიზმის მიერ ან validation set, ზედმეტად მარტივი იყო TFT მოდელისათვის, რომელსაც ძალიან დიდი data სჭირდება. TimeSeriesDataset ისე მუშაობს, რომ მთლიან validation set sliding window-თი დაჭრის, გადაყრის ისეთ მონაცემებს, რომლებიც sliding window-ში არ ეტევა და თითოეულ sliding window-ს გააერთიანებს 1 მონაცემში. ანუ მთლიანი validation set-ში მხოლოდ 2000 ელემენტი რჩებოდა ჩემს შემთხვევაში.
+
+
+### TFT-SimpleFeats-Forecast-5-MAE-Hidden-64-GroupNormalizer
+
+https://wandb.ai/dachis-none/walmart-recruiting-sales-TFT/runs/fz4gjf45?nw=nwuservvaza22
+
+
+ასევე შევეცადე GroupNormalizer გამომეყენებინა input მონაცემებზე, რომელიც დაანორმალიზებდა მონაცემებს ჯგუფის შიგნით და არა მთლიან მონაცემებს. ამან ის გამოიწვია, რომ `val_MAE": 269938.40625`-მდე გაიზარდა. GroupNormalizer-ზე ექსპერიმენტებით მივედი დასკვნამდე, რომ როდესაც მაღალი ვარიაციაა input-ში, მაგალითად ზოგი (Store, Dept)-ისთვის შემოსავალი არის 1000-ის ფარგლებში და ზოგისთვის 300,000-ის ფარგლებში, გაცილებით უფრო მეტი თრენინგი სჭირდება მოდელს და ბოლოს გადავწყვიტე დავბრუნებულიყავი TimeSeriesDataset-ის ჩვეულებრივ normalizer-ზე.
+
+### TFT-SimpleFeats-Forecast-5-MAE-Hidden-64
+
+https://wandb.ai/dachis-none/walmart-recruiting-sales-TFT/runs/v182ca6r?nw=nwuservvaza22
+
+შემდეგ ექსპერიმენტებში forecast-ის მაქსიმალური horizon გავზარდე 5 კვირამდე და მოდელი დავაოპტიმიზე ამ პარამეტრებზე. მაგრამ აქ უკვე გამოიკვეთა პრობლემები TFT-ის გამოყენებაზე ჩვენი ამოცანისათვის. როდესაც მინდოდა, რომ მაგალითად forecast horizon გამეზარდა 54 კვირამდე, რომ დაახლოებით 1 წელი მეწინასწარმეტყველა და ისტორია(max_encoder_length) მქონოდა 30 სიგრძის, TimeSeriesDataset მეუბნებოდა, რომ შეუძლებელია ჩემი train dataset-ის გამოყენება ამ მიზნის მისაღწევად, რადგან sliding window-ში არ ეტეოდა წარსულის მონაცემები + forecast მონაცემები, რომლებიც 1 data point-ში უნდა მოექცია და მოდელი გაეწვრთნა. ანუ აქედან გამომდინარე შემიძლია დავასკვნა, რომ TFT-ს ძალიან დიდი მონაცემები სჭირდება long horizon forecast-ის გასაკეთებლად, რაც ამ ამოცანაში არ მქონდა. როგორც წავიკითხე, TFT-ს ძირითადად იყენებენ ბიზნესები on-demand forecast-ისათვის, რათა გაიგონ მაგალითად შემდეგ კვირას რა იქნება გაყიდვების რაოდენობა ან რა იქნება stock price. predict() მეთოდშიც საჭიროა, რომ გადავცეთ წარსულის მონაცემები და შემდეგ გააკეთებს მომავლის prediction-ს, რაც არაა იდეალური kaggle-ს competition-ებისათვის. ამ მოდელის შესწავლა/training-ზე დაახლოებით 2 დღე დავხარჯე, თუმცა ჩვენი ამოცანისათვის არ გამოდგა.
+
+## DLinear
+
+https://dagshub.com/Cimbir/Store-Sales-Forecasting.mlflow/#/experiments/8
+
+ნოუთბუქი: `model_experiment_DLinear.ipynb `
+
+### DLinear Feature Engineering
+ჩვენთვის მოცემული სამივე მონაცემთა ფაილი: train, features და stores ერთმანეთზე დავმერჯე და შევქმენი ერთიანი დატასეტი, ხოლო N.A. მნიშვნელობები ჩავანაცვლე 0-ით.
+
+ვალიდაციისთვის გაყიდვის მონაცემები თარიღის მიხედვით დავსორტე და გამოვყავი ბოლო 20%.
+
+Feature Engineering დავიწყე მარტივი თარიღთან დაკავშირებული feature ების დამატებით, როგორებიცაა Year, Month და Day, სამი რიცხვითი feature, რათა მოდელს დახმარებოდა სეზონურობის აღმოჩენაში. შემდგომ ასევე დავამატე Lag Features 1, 2, 3, 4, 8, 12, 24 და 52 კვირის წინ, რაც მოდელს დაეხმარება ისტორიული ტრენდების დასწავლაში და Rolling average features, მიმდინარე ტრენდების დასასწავლად.
+
+### DLinear Training
+მოდელის გაწვრთნისას გავტესტე სხვადასხვა მიდგომა და ჰიპერპარამეტრები. თავდაპირველად ვცადე dropout, თუმცა მისი ეფექტურობისადმი სკეპტიკურად ვიყავი განწყობილი, რადგან მოდელს განზოგადება ისედაც კარგი ჰქოდა, ვალიდაციისას WMAE უფრო დაბალი იყო ვიდრე ტრენინგისაც. მართლაც, მისმა განულებამ ცდომილება შეამცირა და ამიტომ აღარ გამოვიყენე. ასეე გავტესტე ReLU და LeakyReLU აქტივაციის ფუნქციებად. ამ უკანასკნელმა ცდომილება საგრძნობლად შეამცირა და სწორე ის გამოვიყენე.
+
+ასევე გამოვცადე სხვადასხვა მნიშვნელობა lookback ისთვის, თავდაპირველი 36 ძალიან ნელი იყო, საბოლოო ჯამში 20მდე ჩამოყვანამ სწრაფი გაწვრთნის დრო და კარგი განზოგადება მოგვცა. 10 ეპოქის შემდეგ წვრთნის და ვალიდაციის სიზუსტე ორივე სტაბილურდება, ამიტომ მეტად გაზრდა საჭირო აღარაა. ოპტიმიზაციისთვის გამოვიყენე Adam, რადგან როგორც არაერთხელ ვნახეთ, იგი საუკეთესო არჩევანია.
+
+![Plot](plots/DLinear/training.png)
+
+როგორც ეს ჰისტოგრამა გვაჩვენებს, მოდელი ტრენინგისას მაღალი სიზუსტით უახლოვდება რეალურ შედეგს რამდენიმე outlier ის გარდა, რაც რაღაც მხრივ დადებითია, რადგან ამცირებს overfit ის შანსს, რასაც ვალიდაციის შედეგებიც გვიდასტურებს:
+
+![Plot](plots/DLinear/validation.png)
+
+## Prophet
+
+https://dagshub.com/Cimbir/Store-Sales-Forecasting.mlflow/#/experiments/1
+
+ნოუთბუქი: `model_experiment_prophet.ipynb `
+
+### Prophet Feature Engineering
+პირველ რიგში, Date სვეტს დავარქვი ds და Weekly_Sales სვეტს y, რათა მომერგო prophet ბიბლიოთეკის საჭიროებებისთვის. ასევე მონაცემები დავსორტე ds ის მიხედვით, რათა lagging და rolling feature-ები სწორად გამომეთვალა. საბოლოო ჯამში, მათი გატესტვის შემდეგ, რეგრესორებს და lagging feature ებს აღარ ვიყენებ, რადგან გაუმჯობესება დიდად არ მოუციათ და ბევრის დამატების შემთხვევაში პირიქით, ხმაურს ქმნიან და მოდელის ტრენინგს ხელს უშლიან.
+
+გამოვყავი ტრენინგისა და ვალიდაციის სეტები, მონაცემები გავყავი თარითზე 2012-06-01. ადრინდელი მონაცემები გამოვიყენე მოდელის ტრენინგში, ხოლო დანარჩენი ვალიდაციისას. 
+
+## Prophet Training
+რადგან მოდელი მხოლოდ ერთ სერიას ეთვისება, იგი სათითაოდ გავუშვი ყველა (Store, Department) კომბინაციაზე. თუმცა რადგან ჯამში 2923 ვალიდური კომბინაციაა და ზოგიერთი მათგანი შეიძლება ბევრ მონაცემს არ შეიცავდეს რომელსაც ტრენინგზე 60-ზე ნაკლები ან ვალიდაციისას 8-ზე ნაკლები სტრიქონი აქვს.
+
+https://dagshub.com/Cimbir/Store-Sales-Forecasting.mlflow/#/experiments/1/runs/aeec63297be74c15b66004ca633c686b
+
+თავდაპირველად დავიწე მარტივი მოდელით, რომელიც seasonality_mode ად additive ს იყენებდა და შესაძლო ჰიპერპარამეტრების უმრავლესობად default მნიშვნელობას, რათა ამეღო baseline შემდგომი განვითარებისთვის.
+
+https://dagshub.com/Cimbir/Store-Sales-Forecasting.mlflow/#/experiments/1/runs/ed7bdb4d92b54587bab9f6a6c937103e
+
+მეორე ჯერზე, seasonality_mode გავხადე multiplicative, რაც უკეთესად აღწერს მოცემულ ამოცანას და იგი შემდეგ გაშვებებზე გავაუმჯობესე, რათა გვქონოდა კარგი შედარება წვრთნის და ვალიდაციის შედეგებს შორის, (რომლის შესაბამისი ლინკია https://dagshub.com/Cimbir/Store-Sales-Forecasting.mlflow/#/experiments/1/runs/54d31736c67e4e509e4ddfb79b62c265), რამაც მოგვცაშედეგი:
+
+```
+avg_train_mae  1498.4543054951114
+avg_wmae_train 1802.9449847561912
+avg_mae_validation 1615.7558764738053
+avg_wmae_validation 1626.5660711672197
+```
+
+მოდელი Overfit არ არის, რადგან განზოგადება კარგად შეუძლია, თუმცა თუ უფრო დეტალურ სტატისტიკებს ვნახავთ, ცხადი ხდება, რომ გაუმჯობესება მაინც შესაძლებელია, მაგალითად, შემდეგი გრაფიკი ცხადყოფს, რომ მოდელს C ტიპის მაღაზიებზე განზოგადება უარესად გამოსდის:
+
+![Plot](plots/prophet/store_c_error.png)
+
+მოდელის შემდგომი გაუმჯობესებისთვის, გამოვიყენე grid search, რათა თითოეული შემთხვევისთვის შეგვერჩია ჰიპერპარამეტრების ოპტიმალური მნიშვნელობები, თუმცა ეს პროცესი საკმაოდ ნელია და ამიტომ შევძღუდე მაქსიმუმ 10 კომბინაციაზე, რაც მაინც ხანგრძლივი პროცესი აღმოჩნდა. ჰიპერპარამეტრებს ვარჩევდი შემდეგი სიმრავლეეიდან:
+
+```
+prophet__changepoint_prior_scale: [0.01, 0.05, 0.1, 0.5]
+prophet__seasonality_prior_scale: [1.0, 10.0, 100.0]
+prophet__holidays_prior_scale: [1.0, 10.0, 100.0]
+prophet__changepoint_range: [0.8, 0.9]
+prophet__n_changepoints: [20, 25, 30]
+```
+
+ამ პროცესმა მოგვიტანა გაუმჯობესება:
+
+```
+avg_wmae_validation 1410.1830530374386
+```
+
+ასევე გაუმჯობესდა განზოგადება ყველა მაღაზიის ტიპისთვის, მიუხედავად იმისა, რომ train ისას უფრო გაუარესდა, Validation ზე უკეთესი შედეგი გვაჩვენა:
+
+![Plot](plots/prophet/store_c_improved.png)
+
+# Inference
+
+ამ მოდელებიდან საბოლოოდ საუკეთესო შედეგი მივიღე LightGBM-ის `LightGBM_GroupLagFeats_Objective_MAE_Booster_100_TotalFit` მიდგომით და გადავწყვიტეთ, რომ ეს მოდელი გაგვეგზავნა Kaggle-ზე.
+
+https://dagshub.com/Cimbir/Store-Sales-Forecasting.mlflow/#/experiments/10/runs/56be70a46c5e4855a646b5759b07eb59
+
+შედეგი:
+
+Public Score: 3092.63951
+Private Score: 3260.65966
+
+ეს საკმაოდ კარგი შედეგია იქიდან გამომდინარე, რომ პატარა მონაცემები გვქონდა training-ისათვის და უფრო პატარა მონაცემები validation-ისათვის. შეგვიძლია დავასკვნათ, რომ feature-ების შერჩევამ დადებითი შედეგი გამოიღო.
