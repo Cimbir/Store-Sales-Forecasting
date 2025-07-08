@@ -434,3 +434,452 @@ wmae_test 2535.1518000122655
 აქ მაგალითად ჩანს, რომ Mean და Median-ის მაღალი მნიშვნელობები ფასს მაღლა ექაჩება, რაც ლოგიკურია. ასევე 364 დღის წინ Sales თუ მაღალი იყო ესეც ზემოთ ასწევს model-ის output-ს, თუმცა იმდენად არა, როგორც სხვა feature-ები.
 
 ერთი შეხედვით ამ მოდელმა ძალიან კარგი შედეგები დადო, თუმცა გასათვალისწინებელია, რომ inference-ის დროს test set-თან შედარებით ჩვენი validation set გაცილებით უფრო პატარაა, inference კი მოგვიწევს 2 წლიან შუალედზე. ამიტომაც ძალიან მნიშვნელოვანი იქნება, რომ მთლიანი dataset დავფიტოთ სანამ inference-ს გადავწყვეტთ.
+
+## SARIMA
+
+ერთ-ერთი პირველი მოდელია რომელიც გავტესტეთ. ARIMA-სგან ის განასხვავებს, რომ SARIMA-ში შემოდი სეზონურობის განმარტება, რაც ამ time series პრობლემისთვის არის შესაბამისი, რადგან დატაში აღინიშნებოდა პიკები 1 წლის დაშორებებით. ამასთან ერთად, ამ მოდელისთვის დამახასიათებელია ის, რომ გადაცემული დატა უნდა იყოს stationary, რაც იმას ნიშნავს, რომ არ უნდა შეიცვალოს მისი mean და variance დროთა განმავლობაში, ანუ ფაქტობრივად thrend უნდა გავუქროთ. ამისი მოხერხება შესაძლებელია მარტივად datapoint-ებს შორის სხვაობების გაგებით.
+
+### ACF/PACF
+
+იმის დასადგენად რომ სეზონურობა მართლაც 52 (52 კვირა = 1 წელი) უნდა ყოფილიყო, ამავდროულად გამოვიყენეთ ACF და PACF გრაფიკები, რომლებიც გვიჩვენებს თუ რამდენად კორელირებული იყო წინა კვირების მონაცემები მიმდინარე კვირასთან. მკვეთრად დიდი მნიშვნელობები მიანიშნებს იმას, რომ SARIMA-ს მოდელში S სეზონურობის ცვლადი დიდი ალბათობით ეგ უნდა იყოს. შესაბამისად, ეგ მნიშვნელობა ავირჩიეთ. ამ გრაფიკების აგებას სჭირდება რომ დატა ასევე stationary იყოს.
+
+![Plot](plots/sarima/acf_every_store_avg.png)
+
+### Preprocessing
+
+SARIMA-ს მოდელს ხშირ შემთხვევაში არ სჭირდება სხვა ცვლადები forecast-ის გასაკეთებლად და ხშირად კიდევაც დიდად არაფრით ეხმარება, თუმცა ტრენინგის მიზნისთვის მაინც დავამატე დამატებითი ცვლადების დამუშავების შესაძლებლობაც. დატას მოსამზადებლად შემდეგი preprocessing გავაკეთე:
+
+* Cleaning - NaN ცვლადები შევავსე საშუალოებით. ესენი იყვნენ Markdown ცვლადები, რომელთა საშუალოებით შევსება ლოგიკური გამოსავალი იყო
+* Encoding - Type და IsHoliday ცვლადები მარტივად შესაბამის რიცხვებად გარდავქმენი
+
+## Search
+
+ჰიპერპარამეტრების შესარჩევად გამოვიყენე Grid Search, რომელიც შემდეგ სივრცეში ეძებდა:
+
+* `p` : 0 - 3
+* `d` : 0 - 2
+* `q` : 0 - 3
+* `P` : 0 - 3
+* `D` : 0 - 2
+* `Q` : 0 - 3
+* `S` : 52
+
+საუკეთესო პარამეტრების დადგენის შემდეგ კიდევ ვიღებთ შემდეგ გრაფიკს, რომელზეც ჩანს რომ კარგად ჩანს რომ მოდელმა სწორად ისწავლა პიკის ადგილმდებარეობა
+
+![Plot](plots/sarima/weekly_sales_over_time_3_3.png)
+
+## Problem
+
+ამის მიუხედავად, ამ მოდელს ჰქონდა 1 დიდი პრობლემა: მას მხოლოდ შეეძლო 1 სერიის დასწავლა, რაც არ გამოდგებოდა ამ დატაზე, რადგან აქ გვიწევდა რამდენიმე მაღაზიისა და დეპარტამენტისთვის პროგნოზის გაკეთება. ერთ-ერთი გამოსავალი რათქმაუნდა არის ყველა მაღაზიისთვის ცალკე მოდელის გაწვრთნა, მაგრამ ამას დასჭირდებოდა ძალიან დიდი რაოდენობის მეხსიერება, დრო და კოორდინაცია რომ სწორ დატაზე სწორი მოდელი გაშვებულიყო. ამის გამო ვარჩიეთ სხვა მოდელებისთვის მეტი დროის დათმობა, რომლებიც ამ პრობლემისთვის უფრო შესაბამისი იქნებოდა
+
+# N-BEATS
+
+ეს არის ნეირონული ქსელის არქიტექტურა, რომელიც რაღაც მხრივ boosting-ს აკეთებს forecast-ზე: არის ჩამწკრივებული სტაკები და დატა როცა გადის სტაკებში, ყოველი სტაკიდან გამოდის რაღაც მნიშვნელობა, რომელიც საბოლოოდ ემატება და ემატება საბოლოოდ დასაბრუნებელ მნიშვნელობა. ფაქტობრივად ყოველი შემდეგი სტაკი წინას პასუხს აუმჯობესებს.
+
+![Plot](plots/nbeats/nbeats_model_architecture.png)
+
+## Basis
+
+არქიტექტურის გარდაც ამ მოდელში არის მნიშვნელოვანი basis ფუნქციები, რომლებიც გამოიყენება დატის არქიტექტურაში გადასაცემად და ამავდროულად forecast-ის შესაქმნელად. იმპლემენტირებულ არქიტექტურაში მაქვს 3 ტიპის basis ფუნქცია:
+
+1. `generic` - უბრალოდ იღებს ბოლო რაღაც რაოდენობა მნიშვნელობებს. ამ შემთხვევაში ფაქტობრივად გამოიყენება განზომილებების შესანარჩუნებლად და ხელს არ უშლის წრფივ გარდაქმნებს  
+
+2. `trend` - ახდენს trend-ის მოდელირებას პოლინომიალური ფუნქციის აღწერით. ფაქტობრივად მრუდს შექმნის, რომელიც აღწერს თუ დატა ზევით ადის, ქვევით ჩადის თუ უფრო კომპლექსურად მოძრაობს
+
+3. `seasonality` - ახდენს სეზონურიბის მახასიათებლების დასწავლას sin/cos ფუნქციების გამოყენებით (იმის მსგავსად როგორც attention-ში ხდებოდა, როდესაც მნიშვნელოვანი იყო ტოკენების თანმიმდევრობის განსაზღვრა)
+
+## Feature Selection
+
+რადგანაც ამ მოდელით ვაპირებ მთელი დატის დასწავლას, მნიშვნელოვანია რომ target მნიშვნელობის გარდა სხვა feature-ებიც დავუმატო. feature-ების ასარჩევად გამოვიყენე კორელაციის მატრიცა, რომ მენახა თუ რომელი მნიშვნელობები იყვნენ ყველაზე მეტად კორელირებული target მნიშვნელობასთან:
+
+![Plot](plots/nbeats/nbeats_corr_mat.png)
+
+შესაბამისად ავირჩიე 2 feature: `Dept` და `Size`
+
+## Split
+
+ეს ვარჩიე რომ ყოფილიყო დამოკიდებული BACKCAST/FORECAST-ის ზომებზე, ოღონდ ყოველთვის ისე ვტოვებდი, რომ ვალიდაციის სეტში მხოლოდ 1 forecast-ისთვის განკუთვნილი დატა იყო თითო მაღაზია/დეპარტამენტისთვის. ხშირ შემთხვევაში ეს იმას იწვევდა, რომ ფაქტობრივად ნახევარ დატას ვთმობდი ვალიდაციისთვის.
+
+![Plot](plots/nbeats/nbeats_split.png)
+
+## Preprocessing
+
+როგორც სხვა მოდელებისთვის, აქაც საჭირო იყო დატის ნორმალიზება მოდელის კარგად დატრენინგებისთვის. ამისთვის გამოვიყენე `MinMaxScaler`, რომელიც 0-დან 1-მდე ანორმალიზებს დატას. ყველაზე მეტად ეს სკალირება იყო საჭირო target-სთვის, რადგან ის შეიცავდა საკმაოდ დიდი ზომისა და რეინჯის მქონე რიცხვებს
+
+## Training 
+
+ტრენინგის საწყის ეტაპებში ვიყენებდი მთელი სატრენინგო დატის ქვესიმრავლეს ტრენინგის შედეგად დადგენილი საუკეთესო ჰიპერპარამეტრების მალე და მარტივად მიახლოებით დასადგენად
+
+### Grid Search
+
+თავდაპირველი მიზანი იყო საუკეთესო სტეკების აგებულების დადგენა. ამისთვის შევქმენი რამდენიმე სტეკის კონფიგურაცია, რომლებიდანაც საუკეთესოები ამოვარჩიე grid search-ის მეშვეობით.
+
+ვეძებდი შემდეგ პარამეტრებს:
+
+* `stack_types` : სია, რომელიც შეიცავს სტეკის ტიპებს. მაგალითად `['trend', 'seasonality', 'generic']`
+* `thetas_dim` : სია, რომელიც აღწერს თითო
+
+
+```note
+Top 5 configurations:
+Rank 1: Score = 0.001588
+  Config: Standard configuration
+  Stack Types: ['trend', 'seasonality', 'generic']
+  Theta Dims: [4, 8, 8]
+Rank 2: Score = 0.001706
+  Config: Seasonality-first
+  Stack Types: ['seasonality', 'trend', 'generic']
+  Theta Dims: [10, 4, 8]
+Rank 3: Score = 0.001751
+  Config: Strong seasonality
+  Stack Types: ['trend', 'seasonality', 'generic']
+  Theta Dims: [4, 12, 8]
+Rank 4: Score = 0.001760
+  Config: Strong seasonality
+  Stack Types: ['trend', 'seasonality', 'generic']
+  Theta Dims: [4, 12, 8]
+Rank 5: Score = 0.001770
+  Config: Strong seasonality
+  Stack Types: ['trend', 'seasonality', 'generic']
+  Theta Dims: [4, 12, 8]
+```
+
+ყველა კონფიგურაციის სია მოცემულია notebook-ში
+
+### Random Search
+
+საუკეთესო კონფიგურაციების მოძებნის შემდეგ გადავედი ჰიპერპარამეტრების შერჩევაზე. ამისთვის გამოვიყენე Random Search იგივე სატრენინგო დატაზე.
+
+ვეძებდი შემდეგ ჰიპერპარამეტრებს:
+
+* `hidden_layer_units` : [128, 256, 512] - ნეირონების რაოდენობა დამალულ ფენაში
+* `nb_layers` : [2, 3, 4, 5, 6] - ფენების რაოდენობა
+* `nb_blocks_per_stack` : [2, 3, 4, 5] - ბლოკების რაოდენობა თითოეულ სტეკში
+* `batch_size` : [8, 16, 32, 64] - ბაჩის ზომა, რომელიც გამოიყენება ტრენინგის დროს
+* `learning_rate` : [1e-4, 1e-3, 1e-2] - სწავლის სიჩქარე, რომელიც გამოიყენება ოპტიმიზაციის პროცესში
+* `stack_configs` : სია, რომელიც შეიცავს სტეკის კონფიგურაციებს, მაგალითად `{'stack_types': ['trend', 'seasonality', 'generic'], 'thetas_dim': [4, 8, 8], 'description': 'Standard configuration'}`
+
+```python
+TRIALS = 50
+
+search_space = {
+    # DISCRETE - Architecture parameters
+    'hidden_layer_units': [128, 256, 512],  # Powers of 2
+    'nb_layers': [2, 3, 4, 5, 6],  # Integer layer counts
+    'nb_blocks_per_stack': [2, 3, 4, 5],  # Integer block counts
+    'batch_size': [8, 16, 32, 64],  # Powers of 2
+
+    # CONTINUOUS - Learning parameters (log-uniform sampling)
+    'learning_rate': {
+        'type': 'log_uniform',
+        'low': 1e-4,
+        'high': 1e-2
+    },
+
+    # DISCRETE - Stack configurations
+    'stack_configs': [
+        # === STANDARD CONFIGURATIONS ===
+        {
+            'stack_types': ['trend', 'seasonality', 'generic'],
+            'thetas_dim': [4, 8, 8],
+            'description': 'Standard configuration'
+        },
+        {
+            'stack_types': ['trend', 'seasonality', 'generic'],
+            'thetas_dim': [4, 12, 8],
+            'description': 'Strong seasonality'
+        },
+        {
+            'stack_types': ['seasonality', 'trend', 'generic'],
+            'thetas_dim': [10, 4, 8],
+            'description': 'Seasonality-first'
+        },
+
+        # === DUAL SEASONALITY CONFIGURATIONS ===
+        {
+            'stack_types': ['trend', 'seasonality', 'seasonality', 'generic'],
+            'thetas_dim': [4, 6, 10, 8],
+            'description': 'Dual seasonality'
+        },
+        {
+            'stack_types': ['seasonality', 'seasonality', 'trend', 'generic'],
+            'thetas_dim': [8, 12, 4, 8],
+            'description': 'Strong dual seasonality'
+        }
+    ]
+}
+```
+
+საბოლოო შედეგები იყო შემდეგი:
+
+```
+Rank 1: Score = 0.001588
+  Description: N/A
+  LR: 0.000759
+  Batch Size: 64
+  Hidden Layer Units: 128
+  Number of Layers: 3
+  Blocks per Stack: 3
+  Stack Types: ['trend', 'seasonality', 'generic']
+  Theta Dims: [4, 8, 8]
+----------------------------------------
+Rank 2: Score = 0.001706
+  Description: N/A
+  LR: 0.001593
+  Batch Size: 64
+  Hidden Layer Units: 128
+  Number of Layers: 3
+  Blocks per Stack: 5
+  Stack Types: ['seasonality', 'trend', 'generic']
+  Theta Dims: [10, 4, 8]
+----------------------------------------
+Rank 3: Score = 0.001751
+  Description: N/A
+  LR: 0.000817
+  Batch Size: 64
+  Hidden Layer Units: 256
+  Number of Layers: 3
+  Blocks per Stack: 5
+  Stack Types: ['trend', 'seasonality', 'generic']
+  Theta Dims: [4, 12, 8]
+----------------------------------------
+Rank 4: Score = 0.001760
+  Description: N/A
+  LR: 0.000110
+  Batch Size: 32
+  Hidden Layer Units: 256
+  Number of Layers: 5
+  Blocks per Stack: 3
+  Stack Types: ['trend', 'seasonality', 'generic']
+  Theta Dims: [4, 12, 8]
+----------------------------------------
+Rank 5: Score = 0.001770
+  Description: N/A
+  LR: 0.000978
+  Batch Size: 64
+  Hidden Layer Units: 512
+  Number of Layers: 6
+  Blocks per Stack: 3
+  Stack Types: ['trend', 'seasonality', 'generic']
+  Theta Dims: [4, 12, 8]
+----------------------------------------
+```
+
+### Full Training
+
+ბოლოს საუკეთესო კონფიგურაციებისა და ჰიპერპარამეტრების გამოყენებით ავარჩიე საბოლოო მოდელი, რომელსაც მთელ დატაზე დავატრენინგებდი:
+
+```python
+search_space = {
+    'hidden_layer_units': [256],
+    'nb_layers': [4], 
+    'nb_blocks_per_stack': [4],
+    'batch_size': [64], 
+    'learning_rate': [0.001],
+
+    'stack_configs': [
+        {
+            'stack_types': ['trend', 'seasonality', 'generic'],
+            'thetas_dim': [4, 12, 8],
+            'description': 'Strong seasonality'
+        }
+    ]
+}
+```
+
+## Best model results
+
+რადგანაც მოდელი წარმოქმის დასკალირებულ მნიშვნელობებს, ეს მნიშვნელობები გრაფებისთვის უკან დავასკალირე ნამდვილი მნიშვნელობების მისაღებად
+
+### Metrics
+
+```
+best_score 0.00007208646748886378
+best_train_score 0.0002335481160056805
+best_val_score 0.00008896162837414141
+best_wmae 4469.047448446584
+```
+
+### Graphs
+
+აქ კარგად ჩანს თუ როგორ მოქმედებს თითოეული სტაკი საბოლოო შედეგის შესაქმნელად
+
+![Plot](plots/nbeats/combined_contributions.png)
+
+![Plot](plots/nbeats/forecast_patterns.png)
+
+![Plot](plots/nbeats/training_curves.png)
+
+# PatchTST
+
+PatchTST არის Transformer-ზე დაფუძნებული არქიტექტურა, რომელიც შექმნილია დროის სერიის პროგნოზირებისათვის. ის იყენებს Patch-ებს, რაც ნიშნავს, რომ დროის სერიის მონაცემები იყოფა პატარა ნაწილებად, რომლებიც შემდეგ Transformer-ის არქიტექტურაში გადიან. ეს მიდგომა საშუალებას აძლევს მოდელს, რომ უფრო ეფექტურად და სწრაფად დაამუშავოს დიდი მოცულობის დროის სერიები.
+
+![Plot](plots/patchtst//patchtst_architecture.png)
+
+## Self Implementation
+
+თავდაპირველი მიდგომით pytorch-თ გავაკეთე ამ მოდელის იმპლემენტაცია, თუმცა შედეგი აღმოჩნდა გაცილებით უარესი ვიდრე სხვა მოდელები, რადგან ფაქტობრივად მხოლოდ სწორ ხაზს სწავლობდა და დამახასიათებელ წვეტზეც კი თითქმის მუდმივ მნიშვნელობას იჭერდა. 
+
+![Plot](plots/patchtst/bad_predictions.png)
+
+ამის შემდეგ გადავედი neuralforecast-ის მიერ იმპლემენტირებულ PatchTST-ზე, რომელიც გაცილებით უკეთ მუშაობდა და შედეგებიც უკეთესი იყო. ერთი პრობლემა ის ჰქონდა, რომ ამ იმპლემენტაციაში არ შეიძლებოდა დამატებით მნიშვნელობების გადაცემა, შესაბამისად დამატებითი Feature-ები ფაქტობრივად გამოუსადეგარი იყო.
+
+## Preprocessing
+
+ეს პროცესი იგივეა, რაც N-BEATS-ისთვის. დატა ნორმალიზდება MinMaxScaler-ის მეშვეობით, რათა ყველა მნიშვნელობა 0-დან 1-მდე იყოს. ერთადერთი გამორჩეული ნაწილი ის არის, რომ აქ უფრო გამოკვეთილია Pre/Post Processing-ის ნაწილები
+
+## Training
+
+ტრენინგიც ძალიან გავს N-BEATS-ის ტრენინგს. აქაც Grid Search-ით ვეძებ საუკეთესო კონფიგურაციას, Random Search ჰიპერპარამეტრებს და საბოლოოდ მთელ დატაზე ვწვრთნი მოდელს.
+
+### Grid Search
+
+Grid Search-ის დროს ვეძებდი შემდეგ პარამეტრებს:
+
+* patch_len - Patch-ის სიგრძე, რომელიც განსაზღვრავს რამდენი დროის წერტილი იქნება თითო Patch-ში
+* stride - Patch-ის გადახვევის სიგრძე, რაც განსაზღვრავს რამდენი დროის წერტილი იქნება გამოტოვებული შემდეგ Patch-ის შექმნისას
+
+საუკეთესო კონფიგურაციები იყო შემდეგი:
+
+```
+Top 5 configurations:
+Rank 1: WMAE = 2212.142582
+  Config: Balanced large - 17/9
+  Patch: 17/9
+  Input Size: 48, Dropout: 0.1
+  Num Heads: 16, Dim Model: 128, Dim FC: 256
+  Learning Rate: 0.001
+Rank 2: WMAE = 2239.626780
+  Config: Bi-weekly overlap - 14/7
+  Patch: 14/7
+  Input Size: 48, Dropout: 0.1
+  Num Heads: 16, Dim Model: 128, Dim FC: 256
+  Learning Rate: 0.001
+Rank 3: WMAE = 2239.793033
+  Config: No overlap - 16/16
+  Patch: 16/16
+  Input Size: 48, Dropout: 0.1
+  Num Heads: 16, Dim Model: 128, Dim FC: 256
+  Learning Rate: 0.001
+Rank 4: WMAE = 2275.620895
+  Config: Very large patch - 28/14
+  Patch: 28/14
+  Input Size: 48, Dropout: 0.1
+  Num Heads: 16, Dim Model: 128, Dim FC: 256
+  Learning Rate: 0.001
+Rank 5: WMAE = 2279.717453
+  Config: Very small patch - 4/2
+  Patch: 4/2
+  Input Size: 48, Dropout: 0.1
+  Num Heads: 16, Dim Model: 128, Dim FC: 256
+  Learning Rate: 0.001
+```
+
+### Random Search
+
+Random Search-ის დროს ვეძებდი შემდეგ ჰიპერპარამეტრებს:
+
+* input_size - Lookback window size, ანუ რამდენი წერტილი იქნება Patch-ის გარეთ, რომელიც მოდელს დაეხმარება პროგნოზის გაკეთებაში
+* dropout - Dropout rate, რომელიც გამოიყენება Transformer-ის, Feedforward-ისა და Head
+* max_steps - მაქსიმალური ტრენინგის ნაბიჯების რაოდენობა, თუმცა ხშირად მოდელი ადრე ჩერდება Early Stopping-ის გამო
+* n_heads - Attention heads-ის რაოდენობა
+* d_model - Hidden dimension, ანუ embedding-ის ზომა
+* d_ff - Feedforward-ის ზომა
+* learning_rate - Learning rate, რომელიც გამოიყენება ტრენინგის დროს
+* patch_configs - Patch-ის კონფიგურაციები, რომლებიც შეიცავს patch_len და stride პარამეტრებს
+
+```python
+TRIALS = 50
+
+search_space = {
+    # DISCRETE - Architecture parameters
+    'input_size': [48, 96],              
+    'dropout': [0.1, 0.2, 0.3],              
+    'max_steps': [500],                       
+    'n_heads': [4, 8, 16],                   
+    'd_model': [128, 256, 512],              
+    'd_ff': [256, 512, 1024],
+
+    # CONTINUOUS - Learning parameters
+    'learning_rate': {
+        'type': 'log_uniform',
+        'low': 1e-4,
+        'high': 1e-2
+    },
+
+    # DISCRETE - Patch configurations
+    'patch_configs': [
+        {
+            'patch_len': 16,
+            'stride': 8,
+            'description': 'Standard patching - 16/8'
+        },
+        {
+            'patch_len': 16,
+            'stride': 16,
+            'description': 'No overlap - 16/16'
+        },
+        {
+            'patch_len': 28,
+            'stride': 14,
+            'description': 'Very large patch - 28/14'
+        },
+        {
+            'patch_len': 14,
+            'stride': 7,
+            'description': 'Bi-weekly overlap - 14/7'
+        },
+        {
+            'patch_len': 17,
+            'stride': 9,
+            'description': 'Balanced large - 17/9'
+        }
+    ]
+}
+```
+
+### Full Training
+
+საუკეთესო კონფიგურაციისა და ჰიპერპარამეტრების გამოყენებით ავარჩიე საბოლოო მოდელი, რომელსაც მთელ დატაზე დავატრენინგებდი:
+
+```python
+search_space = {
+    # DISCRETE - Architecture parameters
+    'input_size': [48],              
+    'dropout': [0.1],              
+    'max_steps': [1000],                      
+    'n_heads': [8],                    
+    'd_model': [512],               
+    'd_ff': [512],
+
+    # CONTINUOUS - Learning parameters
+    'learning_rate': {
+        'type': 'log_uniform',
+        'low': 0.003,
+        'high': 0.003
+    },
+
+    # DISCRETE - Patch configurations
+    'patch_configs': [
+        {
+            'patch_len': 16,
+            'stride': 16,
+            'description': 'No overlap - 16/16'
+        }
+    ]
+}
+```
+
+## Best Model Results
+
+### Metrics
+
+```
+best_wmae 3074.133282639351
+```
+
+### Graphs
+
+![Plot](plots/patchtst/predictions.png)
+
+![Plot](plots/patchtst/errors_freq.png)
