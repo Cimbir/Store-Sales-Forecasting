@@ -12,7 +12,7 @@ https://www.kaggle.com/competitions/walmart-recruiting-store-sales-forecasting
 * **/plots** - დირექტორია, სადაც თითოეული მოდელისათვის საინტერესო plot-ებია მოთავსებული, რომლებსაც ამ README.md-ში ვიყენებთ
 * **model_experiment_XGBoost.ipynb** - XGBoost მოდელის გაწვრთნის პროცესის კოდი თითოეული ნაბიჯით.
 * **model_experiment_LightGBM.ipynb** - LightGBM მოდელის training.
-
+* **model-lightgbm-inference.ipynb** - მოდელი LightGBM-ის inference ფაილი.
 
 # Training
 
@@ -528,3 +528,15 @@ https://wandb.ai/dachis-none/walmart-recruiting-sales-TFT/runs/v182ca6r?nw=nwuse
 
 შემდეგ ექსპერიმენტებში forecast-ის მაქსიმალური horizon გავზარდე 5 კვირამდე და მოდელი დავაოპტიმიზე ამ პარამეტრებზე. მაგრამ აქ უკვე გამოიკვეთა პრობლემები TFT-ის გამოყენებაზე ჩვენი ამოცანისათვის. როდესაც მინდოდა, რომ მაგალითად forecast horizon გამეზარდა 54 კვირამდე, რომ დაახლოებით 1 წელი მეწინასწარმეტყველა და ისტორია(max_encoder_length) მქონოდა 30 სიგრძის, TimeSeriesDataset მეუბნებოდა, რომ შეუძლებელია ჩემი train dataset-ის გამოყენება ამ მიზნის მისაღწევად, რადგან sliding window-ში არ ეტეოდა წარსულის მონაცემები + forecast მონაცემები, რომლებიც 1 data point-ში უნდა მოექცია და მოდელი გაეწვრთნა. ანუ აქედან გამომდინარე შემიძლია დავასკვნა, რომ TFT-ს ძალიან დიდი მონაცემები სჭირდება long horizon forecast-ის გასაკეთებლად, რაც ამ ამოცანაში არ მქონდა. როგორც წავიკითხე, TFT-ს ძირითადად იყენებენ ბიზნესები on-demand forecast-ისათვის, რათა გაიგონ მაგალითად შემდეგ კვირას რა იქნება გაყიდვების რაოდენობა ან რა იქნება stock price. predict() მეთოდშიც საჭიროა, რომ გადავცეთ წარსულის მონაცემები და შემდეგ გააკეთებს მომავლის prediction-ს, რაც არაა იდეალური kaggle-ს competition-ებისათვის. ამ მოდელის შესწავლა/training-ზე დაახლოებით 2 დღე დავხარჯე, თუმცა ჩვენი ამოცანისათვის არ გამოდგა.
 
+# Inference
+
+ამ მოდელებიდან საბოლოოდ საუკეთესო შედეგი მივიღე LightGBM-ის `LightGBM_GroupLagFeats_Objective_MAE_Booster_100_TotalFit` მიდგომით და გადავწყვიტეთ, რომ ეს მოდელი გაგვეგზავნა Kaggle-ზე.
+
+https://dagshub.com/Cimbir/Store-Sales-Forecasting.mlflow/#/experiments/10/runs/56be70a46c5e4855a646b5759b07eb59
+
+შედეგი:
+
+Public Score: 3092.63951
+Private Score: 3260.65966
+
+ეს საკმაოდ კარგი შედეგია იქიდან გამომდინარე, რომ პატარა მონაცემები გვქონდა training-ისათვის და უფრო პატარა მონაცემები validation-ისათვის. შეგვიძლია დავასკვნათ, რომ feature-ების შერჩევამ დადებითი შედეგი გამოიღო.
