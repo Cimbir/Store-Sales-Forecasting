@@ -12,7 +12,7 @@ https://www.kaggle.com/competitions/walmart-recruiting-store-sales-forecasting
 * **/plots** - დირექტორია, სადაც თითოეული მოდელისათვის საინტერესო plot-ებია მოთავსებული, რომლებსაც ამ README.md-ში ვიყენებთ
 * **model_experiment_XGBoost.ipynb** - XGBoost მოდელის გაწვრთნის პროცესის კოდი თითოეული ნაბიჯით.
 * **model_experiment_LightGBM.ipynb** - LightGBM მოდელის training.
-* **model-lightgbm-inference.ipynb** - მოდელი LightGBM-ის inference ფაილი.
+* **model_inference_LightGBM.ipynb** - მოდელი LightGBM-ის inference ფაილი.
 
 # Training
 
