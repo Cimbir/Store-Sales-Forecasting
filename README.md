@@ -382,3 +382,49 @@ wmae_test 2763.8684216768806
 ![Plot](plots/lightgbm/GroupFeats_100_Importance.png)
 
 როგორც ვვარაუდობდი Mean-სა და Median-ს დიდი მნიშვნელობა ენიჭება, ასევე ყურადღებას აქცევს Min-სა და Max-ს რაც ძალიან კარგია.
+
+### LightGBM_GroupFeats_Objective_MAE_Booster_200_LR_0.03
+
+https://dagshub.com/Cimbir/Store-Sales-Forecasting.mlflow/#/experiments/10/runs/b6a958bb95be4076b8a0fed89d737405
+
+Overfit-ის შესამცირებლად თავდაპირველი ნაბიჯი რაც გადავდგი ისაა, რომ learning_rate=0.03-ზე დავიყვანე და Booster-ების რაოდენობა გავზარდე 200-მდე. შედეგად უფრო სტაბილური მოდელი მივიღე:
+
+```
+mae_train 2202.967977512935
+mae_test 2605.143088553982
+wmae_train 2420.5725538976876
+wmae_test 2888.417111338083
+```
+
+### LightGBM Feature Engineering 3
+
+საბოლოოდ საუკეთესო მოდელის მისაღებად, როგორც XGBoost-ში აქაც გადავწყვიტე Lag Feature-ების შემოღება. `[7*51, 7*52, 7*53]` დღის წინანდელ Weekly_Sales ჩაუსვამს ახალ Feature-ებად.
+
+### LightGBM_GroupLagFeats_Objective_MAE_Booster_100
+
+https://dagshub.com/Cimbir/Store-Sales-Forecasting.mlflow/#/experiments/10/runs/43a826d6d18e473fb689a3cee2d7ad3d
+
+100 Booster-იანმა მოდელმა ამ feature-ებით მომცა შემდეგი შედეგები:
+
+```
+mae_train 2051.544241439307
+mae_test 2269.138472935298
+wmae_train 2248.8774571895674
+wmae_test 2535.1518000122655
+```
+ახლა შეუძლია წინა წლის მონაცემები აიღოს და უკეთესად შეუძლია გამოიცნოს საით წავა მომავალი Weekly_Sales.
+
+![Plot](plots/lightgbm/GroupLag_12.png)
+
+
+ასევე შეგვიძლია შევხედოთ ყველა (Store, Dept) წყვილის საშუალო Weekly_Sales ერთ გრაფიკში:
+
+![Plot](plots/lightgbm/GroupLag_Avg.png)
+
+აშკარაა, რომ ბოლო მონაცემებზე Lag-ის მნიშვნელობები გამოილევა, რადგან წინა წლიდან აღარ გვაქვს ინფორმაცია, თუმცა როგორც ხედავთ, ძალიან მაინც არ ასცდება ნამდვილ მნიშვნელობებს, რადგან Min, Max, Mean, Median დაიჭერს.
+
+შეგვიძლია ასევე შევხედოთ feature importance-ს და ვნახავთ, რომ ამ feature-ებს უფრო მეტი მნიშვნელობა ენიჭებათ, ვიდრე Lag-ებს, თუმცა Lag-ებსაც შეაქვთ მნიშვნელოვანი წვლილი საბოლოო prediction-ში. მთავარია, რომ მოდელი არ იყოს მხოლოდ ამათზე დამოკიდებული.
+
+![Plot](plots/lightgbm/GroupLag_Importance.png)
+
+ერთი შეხედვით ძალიან კარგია, თუმცა გასათვალისწინებელია, რომ inference-ის დროს test set-თან შედარებით ჩვენი validation set გაცილებით უფრო პატარაა, inference კი მოგვიწევს 2 წლიან შუალედზე. ამიტომაც ძალიან მნიშვნელოვანი იქნება, რომ მთლიანი dataset დავფიტოთ სანამ inference-ს გადავწყვეტთ.
