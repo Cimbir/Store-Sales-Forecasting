@@ -434,3 +434,23 @@ wmae_test 2535.1518000122655
 აქ მაგალითად ჩანს, რომ Mean და Median-ის მაღალი მნიშვნელობები ფასს მაღლა ექაჩება, რაც ლოგიკურია. ასევე 364 დღის წინ Sales თუ მაღალი იყო ესეც ზემოთ ასწევს model-ის output-ს, თუმცა იმდენად არა, როგორც სხვა feature-ები.
 
 ერთი შეხედვით ამ მოდელმა ძალიან კარგი შედეგები დადო, თუმცა გასათვალისწინებელია, რომ inference-ის დროს test set-თან შედარებით ჩვენი validation set გაცილებით უფრო პატარაა, inference კი მოგვიწევს 2 წლიან შუალედზე. ამიტომაც ძალიან მნიშვნელოვანი იქნება, რომ მთლიანი dataset დავფიტოთ სანამ inference-ს გადავწყვეტთ.
+
+### LightGBM_GroupLagFeats_Objective_MAE_Booster_150
+
+https://dagshub.com/Cimbir/Store-Sales-Forecasting.mlflow/#/experiments/10/runs/c98228003bc14684a673e64cdebb18c9
+
+ამ მოდელის გაწვრთნა იგივე პარამეტრებით, თუმცა 150 Booster-ით ვცადე, რათა შემემოწმებინა underfitted ხომ არ იყო მოდელი, თუმცა WMAE ტესტზე მხოლოდ მცირედ გაუმჯობესდა. შესაბამისად გადავწყვიტე, რომ საბოლოოდ წინა მოდელი და overffited მოდელის მიღება არ გამერისკა.
+
+```
+mae_train 1923.451521550722
+mae_test 2139.670299112856
+wmae_train 2109.626178889381
+wmae_test 2404.084584008354
+```
+
+### LightGBM_GroupLagFeats_Objective_MAE_Booster_100_TotalFit
+
+https://dagshub.com/Cimbir/Store-Sales-Forecasting.mlflow/#/experiments/10/runs/56be70a46c5e4855a646b5759b07eb59
+
+საბოლოოდ ავიღე საუკეთესო მოდელად 100 Booster-იანი ვერსია და გავწვრთენი მთლიან ბაზაზე და მოვამზადე inference-ისათვის. Preprocessor-იც დავფიტე მთლიან ბაზაზე და ავტვირთე MLflow-ზე.
+
