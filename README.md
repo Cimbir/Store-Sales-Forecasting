@@ -13,6 +13,13 @@ https://www.kaggle.com/competitions/walmart-recruiting-store-sales-forecasting
 * **model_experiment_XGBoost.ipynb** - XGBoost მოდელის გაწვრთნის პროცესის კოდი თითოეული ნაბიჯით.
 * **model_experiment_LightGBM.ipynb** - LightGBM მოდელის training.
 * **model_inference_LightGBM.ipynb** - მოდელი LightGBM-ის inference ფაილი.
+* **model_experiment_DLinear.ipynb** - DLinear training.
+* **model_experiment_prophet.ipynb** - Prophet training.
+* **model_inference_patchtst.ipynb** - PatchTST training.
+* **model_inference_patchtst.ipynb** - PatchTST inference.
+* **model_experiment_TemporalFusionTransformer.ipynb** - TFT training.
+* **model_n_beats.ipynb** - N-Beats Training.
+* **model_sarima.ipynb** - Sarima Training.
 
 # Training
 
